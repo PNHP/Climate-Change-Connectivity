@@ -1,0 +1,41 @@
+### PNHP-WPC: Standardize Values by Stratification Factor
+### Project 1245: DCNR Climate Change Connectivity
+### 2020-02-07
+### Anna Johnson and David Yeany II
+
+
+install.packages("vegan")
+library(vegan)
+
+install.packages("dplyr")
+library(dplyr)
+
+setwd("C:/Users/dyeany/Documents/R/1245_DCNR_Connectivity")
+data.cores <- read.csv ((file="C:/Users/dyeany/Documents/R/1245_DCNR_Connectivity/Cores_Final.csv"), stringsAsFactors=FALSE)
+data.connectors <- read.csv ((file="C:/Users/dyeany/Documents/R/1245_DCNR_Connectivity/Connectors_Final.csv"), stringsAsFactors=FALSE)
+
+## Remove Null values and create subset for adding back to dataset ONLY USE if NULLS Exist in CCC_HighConn
+data.cores.nas <- subset(data.cores, is.na(data.cores$CCC_HighCon))
+data.cores.na <- data.cores[complete.cases(data.cores[,29]),]
+data.connectors.nas <- subset(data.connectors, is.na(data.connectors$CCC_HighCon))
+data.connectors.na <- data.connectors[complete.cases(data.connectors[,29]),]
+
+#data$CCC_HighConn <- as.numeric(data$CCC_HighConn)
+## Split dataset by stratification values. Number of lists should equal number of grouping values.
+datlist.cores <- split(data.cores.na, f=data.cores.na$Region)
+datlist.connectors <- split(data.connectors.na, f=data.connectors.na$Region)
+
+## Standardize stratified values on 0-1 scale 
+for(i in seq_along(datlist.cores)){
+  datlist.cores[[i]]$Connectivity_Value <- decostand(datlist.cores[[i]]$CCC_HighConn, method="range")
+}
+for(i in seq_along(datlist.connectors)){
+  datlist.connectors[[i]]$Connectivity_Value <- decostand(datlist.connectors[[i]]$CCC_HighConn, method="range")
+}
+## Merge datsets that were split into lists back together
+dat.cores.stand <- bind_rows(datlist.cores)
+dat.connectors.stand <- bind_rows(datlist.connectors)
+
+## Merged new dataset with subset of data with null values
+dat.stand <- bind_rows(dat.cores.stand,data.cores.nas,dat.connectors.stand,data.connectors.nas)
+write.csv(dat.stand, file = "Cores_Connectors_Final_stand.csv",row.names=FALSE)
